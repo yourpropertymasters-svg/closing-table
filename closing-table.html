@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>Closing Table — AS-IS Case Files</title>
+<style>
+  :root{
+    --ink:#121A26; --panel:#1B2A41; --panel-light:#243652;
+    --paper:#F7F3E8; --paper-line:#E3DCC9;
+    --gold:#C9A227; --gold-dark:#9C7C1D;
+    --danger:#B23B3B; --success:#3F7D58; --warn:#C98A27;
+    --text-dark:#20242C; --muted:#6B7280;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family: system-ui, -apple-system, sans-serif; background:var(--ink); color:var(--text-dark); }
+  .page{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:18px; }
+  .frame{ width:100%; max-width:480px; background:var(--panel); border-radius:18px;
+    box-shadow:0 16px 40px rgba(0,0,0,0.45); overflow:hidden; border:1px solid var(--panel-light); }
+  header{ padding:20px 22px 14px; }
+  .brand{ display:flex; align-items:baseline; justify-content:space-between; }
+  .brand h1{ margin:0; color:var(--gold); font-size:20px; font-weight:800; letter-spacing:0.04em; }
+  .brand span{ color:#cbd3e0; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; }
+  .subtitle{ color:#9aa6bb; font-size:12px; margin-top:4px; }
+  .disclaimer{ color:#7e8aa1; font-size:10.5px; margin-top:10px; line-height:1.4; }
+
+  .screen{ display:none; padding:0 22px 24px; }
+  .screen.active{ display:block; }
+
+  .name-box{ background:var(--paper); border-radius:14px; padding:20px; margin-top:8px; }
+  .name-box label{ display:block; font-size:12px; font-weight:700; color:var(--muted); margin-bottom:6px; letter-spacing:0.05em; text-transform:uppercase; }
+  .name-box input{ width:100%; padding:10px 12px; border:1px solid var(--paper-line); border-radius:8px; font-size:15px; }
+  .name-box .hint{ font-size:11px; color:var(--muted); margin-top:10px; line-height:1.4; }
+  .primary-btn{ width:100%; margin-top:14px; background:var(--gold); color:#1B2A41; border:none; border-radius:10px;
+    padding:12px; font-weight:800; font-size:14px; cursor:pointer; letter-spacing:0.02em; }
+  .primary-btn:hover{ background:var(--gold-dark); }
+
+  .status-row{ display:flex; justify-content:space-between; align-items:center; margin:12px 0 10px; color:#cbd3e0; font-size:12px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; }
+
+  .case-card{ position:relative; background:var(--paper); border-radius:14px; padding:20px 20px 18px;
+    background-image: repeating-linear-gradient(var(--paper) 0px, var(--paper) 27px, var(--paper-line) 28px);
+  }
+  .case-card .file-no{ font-size:11px; color:var(--muted); font-weight:700; letter-spacing:0.08em; text-transform:uppercase; }
+  .case-card h2{ margin:4px 0 10px; font-size:18px; color:var(--text-dark); }
+  .case-card p{ margin:0; font-size:14.5px; line-height:1.55; color:#2c3340; }
+  .stamp{ position:absolute; top:14px; right:16px; border:2px dashed var(--danger); color:var(--danger);
+    font-weight:800; font-size:10px; letter-spacing:0.1em; padding:4px 8px; border-radius:4px;
+    transform:rotate(-8deg); opacity:0.75; }
+
+  .prompt{ color:#cbd3e0; font-size:13px; font-weight:700; margin:14px 4px 8px; }
+  .choices{ display:flex; flex-direction:column; gap:10px; }
+  .choice-btn{ text-align:left; background:var(--panel-light); color:#eef1f6; border:1px solid #3a4d6c;
+    border-radius:10px; padding:12px 14px; font-size:13.5px; line-height:1.4; cursor:pointer; transition:background 120ms ease; }
+  .choice-btn:hover{ background:#2c4264; }
+
+  .feedback-panel{ display:none; border-radius:12px; padding:16px; margin-top:6px; border:2px solid var(--muted); background:#fff; }
+  .feedback-panel.correct{ border-color:var(--success); background:#EAF4EE; }
+  .feedback-panel.partial{ border-color:var(--warn); background:#FBF1E3; }
+  .feedback-panel.wrong{ border-color:var(--danger); background:#FBEAEA; }
+  .feedback-points{ font-weight:800; font-size:13px; margin-bottom:6px; }
+  .feedback-text{ font-size:13.5px; line-height:1.5; color:#2c3340; margin-bottom:14px; }
+  .next-btn{ width:100%; background:var(--ink); color:#fff; border:none; border-radius:10px; padding:11px; font-weight:700; cursor:pointer; }
+
+  .results-card{ background:var(--paper); border-radius:14px; padding:22px; text-align:center; }
+  .results-card .score-big{ font-size:40px; font-weight:800; color:var(--ink); margin:6px 0 0; }
+  .results-card .score-max{ font-size:13px; color:var(--muted); margin-bottom:8px; }
+  .rank-label{ display:inline-block; background:var(--gold); color:#1B2A41; font-weight:800; font-size:13px;
+    padding:6px 14px; border-radius:20px; margin-top:4px; }
+
+  .leaderboard{ margin-top:18px; background:var(--panel-light); border-radius:12px; padding:14px 16px; }
+  .leaderboard h3{ margin:0 0 10px; color:var(--gold); font-size:13px; letter-spacing:0.06em; text-transform:uppercase; }
+  .lb-row{ display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid #34466a; font-size:13.5px; color:#eef1f6; }
+  .lb-row:last-child{ border-bottom:none; }
+  .lb-rank{ width:26px; color:var(--gold); font-weight:800; }
+  .lb-name{ flex:1; }
+  .lb-score{ font-weight:800; }
+  .lb-loading{ color:#aab4c6; font-size:12.5px; padding:6px 0; }
+
+  .results-actions{ display:flex; gap:10px; margin-top:18px; }
+  .results-actions button{ flex:1; border-radius:10px; padding:11px; font-weight:700; cursor:pointer; border:none; }
+  .results-actions .play-again{ background:var(--gold); color:#1B2A41; }
+  .results-actions .change-name{ background:transparent; color:#cbd3e0; border:1px solid #3a4d6c; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="frame">
+    <header>
+      <div class="brand">
+        <h1>Closing Table</h1>
+        <span>Case Files</span>
+      </div>
+      <div class="subtitle">AS-IS Contract Scenario Training</div>
+      <div class="disclaimer">Educational practice tool, not legal advice. Always confirm specifics with your broker or an attorney before relying on any of this in a real transaction.</div>
+    </header>
+
+    <div class="screen active" id="screen-name">
+      <div class="name-box">
+        <label for="nameInput">Agent name</label>
+        <input id="nameInput" type="text" placeholder="e.g. Jamie R." maxlength="40" />
+        <button class="primary-btn" id="startBtn">Begin Casework</button>
+        <div class="hint">Heads up: your name and score go on a shared team leaderboard visible to anyone with this link.</div>
+      </div>
+    </div>
+
+    <div class="screen" id="screen-play">
+      <div class="status-row">
+        <span id="caseProgress">Case 1 of 6</span>
+        <span id="caseScore">Score: 0</span>
+      </div>
+      <div class="case-card">
+        <div class="stamp">CASE FILE</div>
+        <div class="file-no" id="caseFileNo">FILE NO. 01</div>
+        <h2 id="caseTitle"></h2>
+        <p id="caseSituation"></p>
+      </div>
+      <div class="prompt">What do you do?</div>
+      <div class="choices" id="choices"></div>
+      <div class="feedback-panel" id="feedbackPanel">
+        <div class="feedback-points" id="feedbackPoints"></div>
+        <div class="feedback-text" id="feedbackText"></div>
+        <button class="next-btn" id="nextBtn">Next Case</button>
+      </div>
+    </div>
+
+    <div class="screen" id="screen-results">
+      <div class="results-card">
+        <div class="score-max">Final Score</div>
+        <div class="score-big"><span id="finalScoreVal">0</span></div>
+        <div class="score-max">out of <span id="finalMax">600</span></div>
+        <div class="rank-label" id="rankLabel">Getting There</div>
+      </div>
+      <div class="leaderboard">
+        <h3>Team Leaderboard</h3>
+        <div id="leaderboardMode" style="color:#9aa6bb; font-size:11px; margin-bottom:10px;"></div>
+        <div id="leaderboardList"><div class="lb-loading">Loading leaderboard…</div></div>
+      </div>
+      <div class="results-actions">
+        <button class="play-again" id="playAgainBtn">Play Again</button>
+        <button class="change-name" id="changeNameBtn">Switch Agent</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Team leaderboard backend ──────────────────────────────────────────
+  // Leave this blank to use Claude's built-in shared storage (works when this
+  // page is opened as a Claude artifact). To make the leaderboard work on a
+  // plain GitHub Pages site too, deploy the Google Apps Script web app from
+  // the setup guide and paste its URL here (it ends in /exec).
+  const SHEET_API_URL = "";
+  // ─────────────────────────────────────────────────────────────────────
+
+  const SCENARIOS = [
+    {
+      title: "The Cold Feet Roof",
+      situation: "Your buyer's inspector finds the roof has about 5 more years of life left and the buyer just isn't excited about that. There's no major defect, just cold feet. You're on day 8 of a 15-day inspection period.",
+      choices: [
+        { text: "Tell them they can only cancel if they can prove a specific defect.", points: 0, feedback: "That's backwards for an AS-IS contract — its whole point is that during the inspection period, the buyer can cancel for any reason or no reason at all and get their deposit back, as long as they do it before the period expires." },
+        { text: "Tell them if they want out, they need to cancel in writing before the inspection period ends, and the deposit comes back to them.", points: 100, feedback: "Exactly. That unrestricted right to walk during the inspection period — with deposit returned — is the hallmark of the AS-IS contract. Timing the written notice correctly is what protects the deposit." },
+        { text: "Tell them to just stop responding and let the deal die quietly.", points: 0, feedback: "Going silent doesn't terminate a contract — it can leave the buyer in default if the deadline passes without proper written notice." }
+      ]
+    },
+    {
+      title: "What's the Effective Date?",
+      situation: "Your buyer signs the offer Monday morning. The seller counters Tuesday afternoon and your buyer accepts and signs the counter Wednesday at 9am. The listing agent texts 'we're good!' Wednesday at 10am. Your buyer asks when their inspection clock starts.",
+      choices: [
+        { text: "Tell them the Effective Date is Monday, when they first signed.", points: 0, feedback: "Not quite — the Effective Date is the date of final acceptance: when the last party signs and that acceptance is actually communicated to the other side. A text saying 'we're good' isn't itself the formal notice the contract requires." },
+        { text: "Tell them it's Wednesday, the day of the last signature, but confirm that acceptance was properly delivered to the other party.", points: 100, feedback: "Right idea — the Effective Date hinges on the last signature plus delivery/communication of that acceptance, not just a signature in isolation. Get it confirmed in writing so every deadline that follows is locked to a date you can prove." },
+        { text: "Tell them it doesn't matter, deadlines are flexible anyway.", points: 0, feedback: "Deadlines under this contract are exact, calendar-day deadlines that drive deposit, inspection, and financing rights — getting the Effective Date wrong cascades into every later date being wrong too." }
+      ]
+    },
+    {
+      title: "The Slow Deposit",
+      situation: "Effective Date was Monday. The initial deposit is due within 3 days of the Effective Date. It's now Thursday and the buyer still hasn't wired the deposit, saying 'don't worry, I'll get to it next week.'",
+      choices: [
+        { text: "Let it slide since the seller hasn't said anything.", points: 50, feedback: "Seller silence isn't permission. A late deposit can be treated as a default, giving the seller grounds to terminate — even if nobody's complained yet." },
+        { text: "Tell the buyer this needs to go out today, document the delay in writing, and loop in your broker.", points: 100, feedback: "Right call. Deposit deadlines are real default triggers. Get it moving and create a paper trail in case it becomes an issue later." },
+        { text: "Tell the buyer it's fine to wait until just before the inspection period ends.", points: 0, feedback: "That mixes up two different clocks. The deposit deadline and inspection period are separate; missing the deposit deadline alone can expose your buyer to default." }
+      ]
+    },
+    {
+      title: "Underwriting Trouble",
+      situation: "Closing is in 10 days. The buyer's loan officer says the underwriter flagged an issue and final approval might not come through before the financing contingency deadline, which is in 2 days.",
+      choices: [
+        { text: "Wait and see what happens; no need to do anything yet.", points: 0, feedback: "Waiting past the financing deadline without written notice can forfeit the buyer's right to cancel and get the deposit back under that contingency." },
+        { text: "Get a written extension of the financing deadline, or have the buyer send timely written notice of inability to obtain financing if it falls through.", points: 100, feedback: "That protects your buyer either way: an extension buys more runway, and a timely written notice preserves their right to a deposit refund if the loan really doesn't come through." },
+        { text: "Tell the buyer to just push the closing date back informally.", points: 50, feedback: "An informal understanding isn't the same as a written, signed amendment — without that, the original deadlines technically still control." }
+      ]
+    },
+    {
+      title: "The Appraisal Gap",
+      situation: "The home is under contract for $410,000. The appraisal comes back at $390,000 — a $20,000 gap. The buyer's loan amount depends on the appraised value.",
+      choices: [
+        { text: "Tell the buyer the deal is automatically dead.", points: 0, feedback: "Not automatic — depending on the financing terms negotiated, the buyer may have options like renegotiating price, covering the gap in cash, or terminating per those terms." },
+        { text: "Check exactly what appraisal/financing language was negotiated, then present the buyer their real options: renegotiate, cover the gap, or terminate per those terms.", points: 100, feedback: "Right — what happens here depends entirely on the specific financing and appraisal terms the parties agreed to. Read those terms carefully before advising next steps." },
+        { text: "Tell the buyer to just close at the higher price no matter what.", points: 0, feedback: "That assumes the buyer can and wants to cover the entire gap in cash — never assume; lay out the actual options first." }
+      ]
+    },
+    {
+      title: "The Old Lien",
+      situation: "The title search turns up an old judgment lien against a prior owner that was never released. Closing is in 12 days.",
+      choices: [
+        { text: "Tell the buyer this kills the deal immediately.", points: 0, feedback: "Not necessarily — sellers are generally required to convey marketable title and are typically given a cure period to clear defects like this before it becomes a termination issue." },
+        { text: "Notify the seller in writing of the title defect and give them the chance to cure it within the timeframe the contract allows.", points: 100, feedback: "Correct process — title defects get raised in writing, and the seller gets a chance to clear them. Only if it can't be cured in time do termination/refund rights typically kick in." },
+        { text: "Just delay closing indefinitely without telling anyone.", points: 0, feedback: "Silence doesn't fix a title problem and could create separate timeline/default issues. Defects need to be raised formally." }
+      ]
+    },
+    {
+      title: "The Fence Two Feet Over",
+      situation: "The new survey shows the neighbor's fence is two feet over the property line. Nobody noticed this when the contract was signed.",
+      choices: [
+        { text: "Ignore it, fences don't matter.", points: 0, feedback: "An encroachment can affect marketable title and is exactly the kind of survey issue that needs to be addressed, not ignored." },
+        { text: "Raise it as a title/survey matter in writing so it gets resolved or addressed before closing.", points: 100, feedback: "Right approach — encroachments found on survey are typically handled like other title defects, giving the seller a chance to resolve them." },
+        { text: "Tell the buyer it's automatically the seller's problem to pay for a new fence.", points: 50, feedback: "Maybe, maybe not — that depends on negotiation. The first step is getting it documented and addressed, not assuming who pays." }
+      ]
+    },
+    {
+      title: "The Condo Docs Arrived Late",
+      situation: "Your buyer is purchasing a condo. The association documents weren't provided before the contract was signed, and the buyer just received them yesterday.",
+      choices: [
+        { text: "Tell the buyer they're stuck now, no recourse.", points: 0, feedback: "Buyers of condos generally get a short window to cancel after first receiving the condo/HOA documents if those weren't provided before signing — that's a real protection here." },
+        { text: "Tell the buyer to review the documents now and that they likely have a short cancellation window from the date of receipt if they want out.", points: 100, feedback: "Correct — that short post-receipt review window is a standard buyer protection on condo/HOA purchases. Get them reading those docs immediately, the clock is short." },
+        { text: "Tell them to wait a month before deciding.", points: 0, feedback: "That cancellation window is short — waiting too long forfeits the right to use it." }
+      ]
+    },
+    {
+      title: "Storm Two Days Out",
+      situation: "Two days before closing, a storm rips part of the roof off. The home is under an AS-IS contract and insured by the seller.",
+      choices: [
+        { text: "Tell the buyer they must close anyway, no exceptions.", points: 0, feedback: "Risk-of-loss provisions typically give the buyer options when the property is damaged before closing — forcing a close regardless isn't automatic." },
+        { text: "Check the risk-of-loss terms — the buyer likely has the option to close with an insurance proceeds/repair credit, or terminate if the damage is substantial enough.", points: 100, feedback: "Right — casualty/risk-of-loss clauses usually give buyers a choice here rather than locking them into closing on a damaged home with no adjustment." },
+        { text: "Tell the seller they have to fully repair the roof before any further discussion.", points: 50, feedback: "Repair is one possible outcome, but it's not automatic — the risk-of-loss terms determine the actual options, which may include a credit instead of a repair." }
+      ]
+    },
+    {
+      title: "The Walk-Through Surprise",
+      situation: "At the final walk-through the day before closing, your buyer notices a cracked window that wasn't there during the inspection.",
+      choices: [
+        { text: "Tell the buyer this isn't covered by anything, just close as planned.", points: 0, feedback: "The walk-through exists specifically to confirm the property's condition hasn't changed since the contract date — new damage found there is a legitimate issue to raise, not something to wave off." },
+        { text: "Document it immediately and raise it with the seller's side before closing, since the walk-through is meant to confirm nothing's changed.", points: 100, feedback: "Exactly right — that's the purpose of the walk-through. Get it documented and addressed before funds and title transfer, not after." },
+        { text: "Tell the buyer to just deal with it after they own the place.", points: 0, feedback: "Once closed, leverage to get it fixed or credited drops dramatically. Raise it before closing while there's still negotiating power." }
+      ]
+    },
+    {
+      title: "Buyer Gets Cold Feet Late",
+      situation: "Your buyer gets cold feet for no contract-covered reason after the inspection period has already expired, and refuses to close.",
+      choices: [
+        { text: "Tell them their deposit is automatically gone and that's the end of it.", points: 50, feedback: "Likely outcome, but not the only one — depending on what default remedy the seller elects, the seller could also potentially pursue actual damages or specific performance instead of just keeping the deposit." },
+        { text: "Explain that after the inspection period, walking away without a contract-based right to cancel typically risks the deposit as the seller's remedy — and possibly more depending on which default remedy is elected.", points: 100, feedback: "Right — once contingency periods expire, an unexcused refusal to close is a default, and the consequences depend on which remedy the seller chooses under the contract." },
+        { text: "Tell them not to worry about it since deals fall apart all the time.", points: 0, feedback: "Minimizing it does your buyer a disservice — they need to understand the real financial exposure of a late-stage default." }
+      ]
+    },
+    {
+      title: "Seller Backs Out",
+      situation: "Everything's ready to close, but the seller suddenly says they've decided not to sell and won't sign closing documents.",
+      choices: [
+        { text: "Tell the buyer there's nothing they can do.", points: 0, feedback: "Not true — a seller default typically gives the buyer remedies, which can include getting the deposit back and pursuing other remedies like specific performance, depending on the contract's default terms." },
+        { text: "Tell the buyer their deposit should be returned and they should talk to an attorney about further remedies, including possibly specific performance.", points: 100, feedback: "Correct. Buyers generally aren't left empty-handed when a seller backs out without cause — get them pointed toward their actual options quickly." },
+        { text: "Tell the buyer to just walk away and forget about it.", points: 0, feedback: "That leaves real remedies on the table that the buyer may want to pursue, especially if they've incurred costs relying on the deal." }
+      ]
+    },
+    {
+      title: "Deadline Falls on a Saturday",
+      situation: "The inspection period is supposed to end on a Saturday.",
+      choices: [
+        { text: "Tell the buyer they have to get everything done by Friday night to be safe, no exceptions.", points: 50, feedback: "Cautious, but not quite right — most deadlines that fall on a weekend or legal holiday typically extend to the next business day, so the buyer may have a bit more breathing room. Still confirm rather than assume." },
+        { text: "Check how the contract defines deadline days — if it falls on a weekend or holiday, it typically rolls to the next business day.", points: 100, feedback: "Right instinct — always check the specific day-counting rule in the contract before assuming a deadline is lost to a weekend." },
+        { text: "Tell them weekends don't count at all in the calendar.", points: 0, feedback: "That's not how it works either — these are typically calendar-day deadlines, with an extension only when the deadline itself lands on a weekend or holiday." }
+      ]
+    },
+    {
+      title: "Addendum vs. the Printed Form",
+      situation: "The printed contract says one thing about who pays for the survey, but an addendum the parties signed says something different.",
+      choices: [
+        { text: "Default to whatever the printed contract says since it's the 'main' document.", points: 0, feedback: "Generally backwards — addenda are typically drafted to control over conflicting printed terms, since they reflect the parties' most recent, specific agreement." },
+        { text: "Treat the addendum as controlling over the conflicting printed term, and confirm that's reflected as everyone moves forward.", points: 100, feedback: "Correct — when there's a real conflict, the addendum (the more specific, later-negotiated language) typically governs over the standard printed form." },
+        { text: "Tell both parties the conflict cancels out both clauses.", points: 0, feedback: "That's not how conflicting terms get resolved — silence or cancellation isn't the default outcome; the addendum normally wins." }
+      ]
+    },
+    {
+      title: "A Verbal Cancellation",
+      situation: "Your buyer wants to formally exercise their right to cancel during the inspection period. They tell you over the phone, 'Just let the seller's agent know verbally, that's good enough.'",
+      choices: [
+        { text: "Pass along a verbal message to the listing agent and consider it done.", points: 0, feedback: "Contracts like this typically require notices to be in writing to be effective — a verbal heads-up isn't the same as a valid, enforceable cancellation notice." },
+        { text: "Get the cancellation in writing per the contract's notice requirements and make sure it's actually delivered before the deadline.", points: 100, feedback: "Exactly — written notice, properly delivered, before the deadline is what actually protects your buyer's right to a deposit refund. Verbal alone is a risk." },
+        { text: "Tell the buyer it doesn't matter how it's communicated as long as the seller eventually finds out.", points: 0, feedback: "Eventually finding out isn't the same as timely, proper written notice — that gap can cost the buyer their deposit." }
+      ]
+    }
+  ];
+
+  const ROUND_SIZE = 6;
+
+  const state = { name: "", queue: [], idx: 0, score: 0, max: 0 };
+
+  function shuffle(arr){
+    const a = arr.slice();
+    for(let i = a.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function pickRound(n){
+    return shuffle(SCENARIOS.map((_, i) => i)).slice(0, n);
+  }
+
+  function showScreen(id){
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+  }
+
+  function tagForPoints(p){
+    if(p >= 100) return "correct";
+    if(p > 0) return "partial";
+    return "wrong";
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, ch => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[ch]));
+  }
+
+  function renderCase(){
+    const sIdx = state.queue[state.idx];
+    const sc = SCENARIOS[sIdx];
+    document.getElementById("caseProgress").textContent = `Case ${state.idx + 1} of ${state.queue.length}`;
+    document.getElementById("caseScore").textContent = `Score: ${state.score}`;
+    document.getElementById("caseFileNo").textContent = `FILE NO. ${String(state.idx + 1).padStart(2, "0")}`;
+    document.getElementById("caseTitle").textContent = sc.title;
+    document.getElementById("caseSituation").textContent = sc.situation;
+
+    const choicesEl = document.getElementById("choices");
+    choicesEl.innerHTML = "";
+    choicesEl.style.display = "flex";
+    sc.choices.forEach((c, ci) => {
+      const btn = document.createElement("button");
+      btn.className = "choice-btn";
+      btn.textContent = c.text;
+      btn.addEventListener("click", () => selectChoice(ci));
+      choicesEl.appendChild(btn);
+    });
+
+    document.getElementById("feedbackPanel").style.display = "none";
+  }
+
+  function selectChoice(ci){
+    const sIdx = state.queue[state.idx];
+    const sc = SCENARIOS[sIdx];
+    const choice = sc.choices[ci];
+    state.score += choice.points;
+
+    document.getElementById("caseScore").textContent = `Score: ${state.score}`;
+    document.getElementById("choices").style.display = "none";
+
+    const panel = document.getElementById("feedbackPanel");
+    panel.className = "feedback-panel " + tagForPoints(choice.points);
+    document.getElementById("feedbackPoints").textContent = `+${choice.points} pts`;
+    document.getElementById("feedbackText").textContent = choice.feedback;
+    panel.style.display = "block";
+
+    document.getElementById("nextBtn").textContent =
+      (state.idx + 1 < state.queue.length) ? "Next Case" : "See Results";
+  }
+
+  function startRound(){
+    state.queue = pickRound(ROUND_SIZE);
+    state.idx = 0;
+    state.score = 0;
+    state.max = state.queue.length * 100;
+    renderCase();
+    showScreen("screen-play");
+  }
+
+  document.getElementById("startBtn").addEventListener("click", () => {
+    const val = document.getElementById("nameInput").value.trim();
+    state.name = val || "Agent";
+    startRound();
+  });
+
+  document.getElementById("nameInput").addEventListener("keydown", e => {
+    if(e.key === "Enter") document.getElementById("startBtn").click();
+  });
+
+  document.getElementById("nextBtn").addEventListener("click", () => {
+    state.idx++;
+    if(state.idx < state.queue.length){
+      renderCase();
+    } else {
+      finishRound();
+    }
+  });
+
+  function finishRound(){
+    showScreen("screen-results");
+    document.getElementById("finalScoreVal").textContent = state.score;
+    document.getElementById("finalMax").textContent = state.max;
+    const pct = state.score / state.max;
+    let rank;
+    if(pct >= 0.9) rank = "Master Closer 🏅";
+    else if(pct >= 0.75) rank = "Seasoned Pro";
+    else if(pct >= 0.5) rank = "Getting There";
+    else rank = "Back to Training";
+    document.getElementById("rankLabel").textContent = rank;
+    saveScoreAndRenderLeaderboard();
+  }
+
+  function sanitizeKey(name){
+    return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").slice(0, 50) || "agent";
+  }
+
+  function hasClaudeStorage(){
+    return typeof window !== "undefined" && !!window.storage;
+  }
+  function hasSheetBackend(){
+    return !!SHEET_API_URL;
+  }
+  function backendLabel(){
+    if (hasClaudeStorage()) return "Synced live with everyone in this chat.";
+    if (hasSheetBackend()) return "Synced with your whole team.";
+    return "Local to this browser only — no shared backend configured yet.";
+  }
+
+  async function lbSubmit(name, score){
+    if (hasClaudeStorage()){
+      const key = "leaderboard:" + sanitizeKey(name);
+      let existing = null;
+      try{
+        const r = await window.storage.get(key, true);
+        if(r && r.value) existing = JSON.parse(r.value);
+      } catch(e){ /* no existing entry yet */ }
+      const best = existing ? Math.max(existing.best, score) : score;
+      const attempts = existing ? (existing.attempts || 0) + 1 : 1;
+      const entry = { name, best, attempts, lastScore: score, lastPlayed: new Date().toISOString() };
+      try{ await window.storage.set(key, JSON.stringify(entry), true); }
+      catch(e){ console.error("Leaderboard save failed", e); }
+      return;
+    }
+    if (hasSheetBackend()){
+      try{
+        const params = new URLSearchParams({ action: "submit", name, score: String(score) });
+        await fetch(SHEET_API_URL + "?" + params.toString());
+      } catch(e){ console.error("Sheet leaderboard save failed", e); }
+      return;
+    }
+    try{
+      const raw = localStorage.getItem("closingTableLeaderboard");
+      const all = raw ? JSON.parse(raw) : {};
+      const k = sanitizeKey(name);
+      const existing = all[k];
+      const best = existing ? Math.max(existing.best, score) : score;
+      const attempts = existing ? (existing.attempts || 0) + 1 : 1;
+      all[k] = { name, best, attempts, lastScore: score, lastPlayed: new Date().toISOString() };
+      localStorage.setItem("closingTableLeaderboard", JSON.stringify(all));
+    } catch(e){ console.error("Local leaderboard save failed", e); }
+  }
+
+  async function lbList(){
+    if (hasClaudeStorage()){
+      try{
+        const res = await window.storage.list("leaderboard:", true);
+        const entries = [];
+        if (res && res.keys){
+          for (const k of res.keys){
+            try{
+              const r = await window.storage.get(k, true);
+              if (r && r.value) entries.push(JSON.parse(r.value));
+            } catch(e){ /* skip unreadable entry */ }
+          }
+        }
+        return entries.sort((a, b) => b.best - a.best);
+      } catch(e){ return []; }
+    }
+    if (hasSheetBackend()){
+      try{
+        const res = await fetch(SHEET_API_URL + "?action=list");
+        const data = await res.json();
+        return (data.entries || []).sort((a, b) => b.best - a.best);
+      } catch(e){ return []; }
+    }
+    try{
+      const raw = localStorage.getItem("closingTableLeaderboard");
+      const all = raw ? JSON.parse(raw) : {};
+      return Object.values(all).sort((a, b) => b.best - a.best);
+    } catch(e){ return []; }
+  }
+
+  async function saveScoreAndRenderLeaderboard(){
+    await lbSubmit(state.name, state.score);
+    renderLeaderboard();
+  }
+
+  async function renderLeaderboard(){
+    const listEl = document.getElementById("leaderboardList");
+    listEl.innerHTML = '<div class="lb-loading">Loading leaderboard…</div>';
+    const modeEl = document.getElementById("leaderboardMode");
+    if (modeEl) modeEl.textContent = backendLabel();
+
+    const entries = await lbList();
+    if (entries.length === 0){
+      listEl.innerHTML = '<div class="lb-loading">No scores yet — be the first!</div>';
+      return;
+    }
+    listEl.innerHTML = entries.slice(0, 10).map((e, i) => `
+      <div class="lb-row">
+        <span class="lb-rank">#${i + 1}</span>
+        <span class="lb-name">${escapeHtml(e.name)}</span>
+        <span class="lb-score">${e.best}</span>
+      </div>`).join("");
+  }
+
+  document.getElementById("playAgainBtn").addEventListener("click", startRound);
+
+  document.getElementById("changeNameBtn").addEventListener("click", () => {
+    document.getElementById("nameInput").value = "";
+    showScreen("screen-name");
+    document.getElementById("nameInput").focus();
+  });
+</script>
+</body>
+</html>
